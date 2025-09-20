@@ -1,0 +1,620 @@
+{
+  "total_properties": 60,
+  "locations_processed": [
+    "San-Francisco-CA",
+    "Los-Angeles-CA",
+    "Seattle-WA",
+    "Austin-TX",
+    "Miami-FL"
+  ],
+  "processed_at": "2025-09-20 14:57:11",
+  "properties_by_city": {
+    "San": 12,
+    "Los": 12,
+    "Seattle": 12,
+    "Austin": 12,
+    "Miami": 12
+  },
+  "properties": [
+    {
+      "address": "3681 Castro St",
+      "city": "San",
+      "state": "CA",
+      "price": 1060194,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 1150
+    },
+    {
+      "address": "7528 Polk St",
+      "city": "San",
+      "state": "CA",
+      "price": 1283927,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 1.5,
+      "square_feet": 1989
+    },
+    {
+      "address": "7697 Castro St",
+      "city": "San",
+      "state": "CA",
+      "price": 1375643,
+      "property_type": "condo",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "square_feet": 2423
+    },
+    {
+      "address": "946 Castro St",
+      "city": "San",
+      "state": "CA",
+      "price": 1667221,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "square_feet": 1496
+    },
+    {
+      "address": "8812 Van Ness Ave",
+      "city": "San",
+      "state": "CA",
+      "price": 1499039,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "square_feet": 608
+    },
+    {
+      "address": "517 Market St",
+      "city": "San",
+      "state": "CA",
+      "price": 1179180,
+      "property_type": "condo",
+      "bedrooms": 4,
+      "bathrooms": 1.5,
+      "square_feet": 739
+    },
+    {
+      "address": "729 Divisadero St",
+      "city": "San",
+      "state": "CA",
+      "price": 935117,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1243
+    },
+    {
+      "address": "5173 Polk St",
+      "city": "San",
+      "state": "CA",
+      "price": 1154610,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 1578
+    },
+    {
+      "address": "1401 Fillmore St",
+      "city": "San",
+      "state": "CA",
+      "price": 1408554,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 3,
+      "square_feet": 908
+    },
+    {
+      "address": "9828 Valencia St",
+      "city": "San",
+      "state": "CA",
+      "price": 1613423,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "square_feet": 1774
+    },
+    {
+      "address": "4990 Valencia St",
+      "city": "San",
+      "state": "CA",
+      "price": 1583617,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 1,
+      "square_feet": 980
+    },
+    {
+      "address": "8886 Fillmore St",
+      "city": "San",
+      "state": "CA",
+      "price": 1158331,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 1725
+    },
+    {
+      "address": "7294 Van Ness Ave",
+      "city": "Los",
+      "state": "CA",
+      "price": 892841,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 1.5,
+      "square_feet": 1960
+    },
+    {
+      "address": "9086 Van Ness Ave",
+      "city": "Los",
+      "state": "CA",
+      "price": 1271404,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "square_feet": 1487
+    },
+    {
+      "address": "6658 Polk St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1394262,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 3,
+      "square_feet": 911
+    },
+    {
+      "address": "2557 Fillmore St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1591721,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1399
+    },
+    {
+      "address": "5666 Mission St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1651683,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 1.5,
+      "square_feet": 1573
+    },
+    {
+      "address": "6449 Divisadero St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1456560,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 1741
+    },
+    {
+      "address": "7208 Mission St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1221425,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "square_feet": 645
+    },
+    {
+      "address": "7597 Castro St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1596255,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "square_feet": 2093
+    },
+    {
+      "address": "636 Valencia St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1427931,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 2.5,
+      "square_feet": 623
+    },
+    {
+      "address": "8122 Polk St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1391898,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 1.5,
+      "square_feet": 1156
+    },
+    {
+      "address": "8344 Van Ness Ave",
+      "city": "Los",
+      "state": "CA",
+      "price": 1595194,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 840
+    },
+    {
+      "address": "2896 Polk St",
+      "city": "Los",
+      "state": "CA",
+      "price": 1678608,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 830
+    },
+    {
+      "address": "8862 Capitol Hill",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 666804,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 1635
+    },
+    {
+      "address": "1055 Broadway",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 736127,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 1.5,
+      "square_feet": 1215
+    },
+    {
+      "address": "1045 Queen Anne",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 494352,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 1051
+    },
+    {
+      "address": "8267 Pike St",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 814662,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1571
+    },
+    {
+      "address": "4608 Ballard Ave",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 813018,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 957
+    },
+    {
+      "address": "7283 Pike St",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 517305,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1128
+    },
+    {
+      "address": "7164 Pike St",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 553604,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 955
+    },
+    {
+      "address": "593 University Way",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 593783,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 2125
+    },
+    {
+      "address": "6577 Ballard Ave",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 511610,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "square_feet": 1101
+    },
+    {
+      "address": "6671 Fremont Ave",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 795079,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1882
+    },
+    {
+      "address": "5381 Fremont Ave",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 854838,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "square_feet": 958
+    },
+    {
+      "address": "455 Ballard Ave",
+      "city": "Seattle",
+      "state": "WA",
+      "price": 790851,
+      "property_type": "condo",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 1572
+    },
+    {
+      "address": "4469 East 6th St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 416269,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "square_feet": 1461
+    },
+    {
+      "address": "366 Congress Ave",
+      "city": "Austin",
+      "state": "TX",
+      "price": 633172,
+      "property_type": "townhouse",
+      "bedrooms": 5,
+      "bathrooms": 3.5,
+      "square_feet": 1964
+    },
+    {
+      "address": "7886 Burnet Rd",
+      "city": "Austin",
+      "state": "TX",
+      "price": 354465,
+      "property_type": "single_family",
+      "bedrooms": 5,
+      "bathrooms": 3,
+      "square_feet": 2633
+    },
+    {
+      "address": "7814 Red River St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 612861,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "square_feet": 1330
+    },
+    {
+      "address": "6140 Congress Ave",
+      "city": "Austin",
+      "state": "TX",
+      "price": 505208,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 2664
+    },
+    {
+      "address": "1263 Congress Ave",
+      "city": "Austin",
+      "state": "TX",
+      "price": 675335,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 3,
+      "square_feet": 1039
+    },
+    {
+      "address": "1563 Guadalupe St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 372246,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "square_feet": 2440
+    },
+    {
+      "address": "4816 Guadalupe St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 478471,
+      "property_type": "condo",
+      "bedrooms": 5,
+      "bathrooms": 3,
+      "square_feet": 2468
+    },
+    {
+      "address": "9312 Burnet Rd",
+      "city": "Austin",
+      "state": "TX",
+      "price": 631675,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3.5,
+      "square_feet": 1251
+    },
+    {
+      "address": "6128 Burnet Rd",
+      "city": "Austin",
+      "state": "TX",
+      "price": 603457,
+      "property_type": "single_family",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "square_feet": 1339
+    },
+    {
+      "address": "3908 Red River St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 570423,
+      "property_type": "condo",
+      "bedrooms": 5,
+      "bathrooms": 3.5,
+      "square_feet": 1288
+    },
+    {
+      "address": "9700 Guadalupe St",
+      "city": "Austin",
+      "state": "TX",
+      "price": 638053,
+      "property_type": "condo",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 1526
+    },
+    {
+      "address": "2218 Biscayne Blvd",
+      "city": "Miami",
+      "state": "FL",
+      "price": 478582,
+      "property_type": "townhouse",
+      "bedrooms": 2,
+      "bathrooms": 3,
+      "square_feet": 1304
+    },
+    {
+      "address": "3793 Biscayne Blvd",
+      "city": "Miami",
+      "state": "FL",
+      "price": 629954,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 2488
+    },
+    {
+      "address": "8481 Collins Ave",
+      "city": "Miami",
+      "state": "FL",
+      "price": 471788,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 1724
+    },
+    {
+      "address": "528 Flagler St",
+      "city": "Miami",
+      "state": "FL",
+      "price": 557521,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "square_feet": 1833
+    },
+    {
+      "address": "2485 Brickell Ave",
+      "city": "Miami",
+      "state": "FL",
+      "price": 764545,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 3,
+      "square_feet": 1073
+    },
+    {
+      "address": "3013 Flagler St",
+      "city": "Miami",
+      "state": "FL",
+      "price": 536326,
+      "property_type": "condo",
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "square_feet": 1454
+    },
+    {
+      "address": "8398 Lincoln Rd",
+      "city": "Miami",
+      "state": "FL",
+      "price": 512760,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "square_feet": 997
+    },
+    {
+      "address": "3930 Collins Ave",
+      "city": "Miami",
+      "state": "FL",
+      "price": 737697,
+      "property_type": "condo",
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "square_feet": 2471
+    },
+    {
+      "address": "9795 Biscayne Blvd",
+      "city": "Miami",
+      "state": "FL",
+      "price": 831904,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 1449
+    },
+    {
+      "address": "8495 Flagler St",
+      "city": "Miami",
+      "state": "FL",
+      "price": 625568,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "square_feet": 1518
+    },
+    {
+      "address": "9114 Flagler St",
+      "city": "Miami",
+      "state": "FL",
+      "price": 774403,
+      "property_type": "single_family",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 1164
+    },
+    {
+      "address": "1584 Coral Way",
+      "city": "Miami",
+      "state": "FL",
+      "price": 631835,
+      "property_type": "single_family",
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "square_feet": 1604
+    }
+  ]
+}
