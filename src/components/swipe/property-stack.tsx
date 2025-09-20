@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Property } from '@/types/database'
 import PropertyCard from './property-card'
 import PropertyFilter from '../filters/property-filter'
+import MatchesList from '../matches/matches-list'
 import { backendService } from '@/lib/backend-service'
 
 interface PropertyStackProps {
@@ -61,9 +62,12 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
     orderDirection: 'desc'
   })
   const [hasActiveFilters, setHasActiveFilters] = useState(false)
+  const [showMatches, setShowMatches] = useState(false)
+  const [matchesCount, setMatchesCount] = useState(0)
 
   useEffect(() => {
     loadProperties()
+    loadMatchesCount()
   }, [userId])
 
   // Check if filters are active
@@ -283,6 +287,11 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       // Mark property as viewed
       setViewedProperties(prev => new Set([...prev, propertyId]))
 
+      // Update matches count if it was a superlike
+      if (action === 'superlike') {
+        setMatchesCount(prev => prev + 1)
+      }
+
       // Move to next property
       setCurrentIndex(prev => prev + 1)
 
@@ -342,6 +351,18 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
 
   const handleApplyFilters = (appliedFilters: FilterState) => {
     loadFilteredProperties(appliedFilters)
+  }
+
+  const loadMatchesCount = async () => {
+    try {
+      const response = await fetch(`/api/user/matches?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMatchesCount(data.count || 0)
+      }
+    } catch (error) {
+      console.error('Error loading matches count:', error)
+    }
   }
 
   const clearFilters = () => {
@@ -432,10 +453,26 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
         </button>
       )}
 
+      {/* Matches button */}
+      <button
+        onClick={() => setShowMatches(true)}
+        className="absolute top-4 right-4 z-20 bg-pink-500 hover:bg-pink-600 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105"
+        title="View your matches"
+      >
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+        </svg>
+        {matchesCount > 0 && (
+          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {matchesCount}
+          </div>
+        )}
+      </button>
+
       {/* Filter button */}
       <button
         onClick={() => setShowFilters(true)}
-        className={`absolute top-4 right-4 z-20 rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105 ${
+        className={`absolute top-16 right-4 z-20 rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105 ${
           hasActiveFilters 
             ? 'bg-blue-600 text-white' 
             : 'bg-white/90 hover:bg-white text-gray-800'
@@ -454,7 +491,7 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       {hasActiveFilters && (
         <button
           onClick={clearFilters}
-          className="absolute top-16 right-4 z-20 bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-1 text-sm shadow-lg transition-all duration-200"
+          className="absolute top-28 right-4 z-20 bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-1 text-sm shadow-lg transition-all duration-200"
           title="Clear all filters"
         >
           Clear Filters
@@ -463,7 +500,7 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
 
       {/* Loading indicator for more properties */}
       {loadingMore && (
-        <div className="absolute top-20 right-4 z-20 bg-white/90 rounded-full p-3 shadow-lg">
+        <div className="absolute top-32 right-4 z-20 bg-white/90 rounded-full p-3 shadow-lg">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
         </div>
       )}
@@ -507,6 +544,13 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
         onApplyFilters={handleApplyFilters}
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}
+      />
+
+      {/* Matches List Modal */}
+      <MatchesList
+        userId={userId}
+        isOpen={showMatches}
+        onClose={() => setShowMatches(false)}
       />
     </div>
   )
