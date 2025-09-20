@@ -24,25 +24,33 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString()
       })
 
-    // Then insert the interaction (upsert handles duplicates gracefully)
-    const { error } = await serverClient
+    // Check if interaction already exists
+    const { data: existingInteraction, error: checkError } = await serverClient
       .from('interaction')
-      .upsert({
-        user_id: userId,
-        property_id: propertyId,
-        interaction_type: interactionType,
-        created_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,property_id'
-      })
+      .select('id')
+      .eq('user_id', userId)
+      .eq('property_id', propertyId)
+      .single()
 
-    if (error) {
-      // If it's a duplicate key error, that's okay - just return success
-      if (error.code === '23505') {
-        console.log(`Interaction already exists for user ${userId} and property ${propertyId}`)
-      } else {
-        throw error
-      }
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is expected for new interactions
+      throw checkError
+    }
+
+    // Only insert if interaction doesn't exist
+    if (!existingInteraction) {
+      const { error } = await serverClient
+        .from('interaction')
+        .insert({
+          user_id: userId,
+          property_id: propertyId,
+          interaction_type: interactionType,
+          created_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+    } else {
+      console.log(`Interaction already exists for user ${userId} and property ${propertyId}`)
     }
 
     // Update user embedding based on new interaction
