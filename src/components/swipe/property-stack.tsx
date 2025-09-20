@@ -40,11 +40,11 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       setError(null)
       
       // Try to get recommendations first
-      let properties = await backendService.getRecommendations(userId, 20)
+      let properties = await backendService.getRecommendations(userId, 50)
       
       // If no recommendations, get regular properties
       if (!properties || properties.length === 0) {
-        properties = await backendService.getProperties(20)
+        properties = await backendService.getProperties(50)
       }
       
       setProperties(properties)
@@ -126,17 +126,17 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       setLoadingMore(true)
       
       // Check if we've completed the initial batch and should analyze preferences
-      if (currentIndex >= 20 && !initialBatchCompleted && !hasAnalyzedPreferences) {
+      if (currentIndex >= 30 && !initialBatchCompleted && !hasAnalyzedPreferences) {
         setInitialBatchCompleted(true)
         await analyzeUserPreferencesAndReorient()
       }
       
       // Try to get more recommendations first (now with updated user preferences)
-      let newProperties = await backendService.getRecommendations(userId, 10)
+      let newProperties = await backendService.getRecommendations(userId, 25)
       
       // If no recommendations, get regular properties
       if (!newProperties || newProperties.length === 0) {
-        newProperties = await backendService.getProperties(10)
+        newProperties = await backendService.getProperties(25)
       }
       
       // Filter out properties that are already in the current list
@@ -301,7 +301,7 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       )}
 
       {/* Preference analysis completed indicator */}
-      {hasAnalyzedPreferences && currentIndex >= 20 && (
+      {hasAnalyzedPreferences && currentIndex >= 30 && (
         <div className="absolute top-4 right-4 z-20 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-4 py-2 shadow-lg">
           <div className="flex items-center space-x-2">
             <span>✨</span>

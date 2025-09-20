@@ -13,7 +13,7 @@ export class BackendService {
       supabaseUrl !== 'https://placeholder.supabase.co')
   }
 
-  async getProperties(limit: number = 20, offset: number = 0) {
+  async getProperties(limit: number = 50, offset: number = 0) {
     if (!this.useSupabase) {
       throw new Error('Supabase not configured. Please check your environment variables.')
     }
@@ -33,53 +33,93 @@ export class BackendService {
     }
   }
 
-  async getRecommendations(userId: string, limit: number = 20) {
+  async getRecommendations(userId: string, limit: number = 50) {
     if (!this.useSupabase) {
       throw new Error('Supabase not configured. Please check your environment variables.')
     }
 
     try {
-      // Try to get recommendations from Supabase function
-      const { data, error } = await supabase
-        .rpc('get_property_recommendations', {
-          p_user_id: userId,
-          p_limit: limit
-        })
+      // Get user's interactions to exclude already seen properties
+      const { data: interactions } = await supabase
+        .from('interaction')
+        .select('property_id')
+        .eq('user_id', userId)
+        .in('interaction_type', ['like', 'skip'])
 
-      if (error) throw error
+      const seenPropertyIds = interactions?.map(i => i.property_id) || []
 
-      if (data && data.length > 0) {
-        // Get full property data for recommendations
-        const propertyIds = data.map((rec: any) => rec.property_id)
+      // Try to get recommendations using graph traversal
+      const { data: edges, error: edgesError } = await supabase
+        .from('edge')
+        .select('target_property_id, similarity_score')
+        .order('similarity_score', { ascending: false })
+        .limit(limit * 2) // Get more to filter out seen properties
+
+      if (edgesError) {
+        console.error('Error getting graph edges:', edgesError)
+        // Fallback to regular properties
+        return this.getProperties(limit)
+      }
+
+      if (edges && edges.length > 0) {
+        // Get property IDs from edges
+        const propertyIds = edges.map(edge => edge.target_property_id)
+        
+        // Get full property data
         const { data: properties, error: propertiesError } = await supabase
           .from('property')
           .select('*')
           .in('id', propertyIds)
 
-        if (propertiesError) throw propertiesError
+        if (propertiesError) {
+          console.error('Error getting properties for recommendations:', propertiesError)
+          return this.getProperties(limit)
+        }
 
-        // Combine properties with recommendation scores
-        return propertyIds
-          .map((propertyId: string) => {
-            const property = properties?.find(p => p.id === propertyId)
-            const recommendation = data?.find((r: any) => r.property_id === propertyId)
-            
-            return property ? {
+        // Filter out seen properties and get unique properties
+        const uniqueProperties = new Map()
+        
+        for (const edge of edges) {
+          const property = properties?.find(p => p.id === edge.target_property_id)
+          if (property && !seenPropertyIds.includes(property.id) && !uniqueProperties.has(property.id)) {
+            uniqueProperties.set(property.id, {
               ...property,
-              similarity_score: recommendation?.similarity_score || 0,
-              reason: recommendation?.reason || 'unknown'
-            } : null
-          })
-          .filter(Boolean)
-      }
-    } catch (error) {
-      console.warn('Supabase recommendations error, falling back to regular properties:', error)
-      // Fall back to regular properties instead of demo data
-      return await this.getProperties(limit)
-    }
+              similarity_score: edge.similarity_score,
+              reason: 'graph_traversal'
+            })
+            
+            if (uniqueProperties.size >= limit) break
+          }
+        }
 
-    // Fallback to regular properties if no recommendations
-    return await this.getProperties(limit)
+        const recommendations = Array.from(uniqueProperties.values())
+        
+        if (recommendations.length > 0) {
+          return recommendations
+        }
+      }
+
+      // Fallback to regular properties if no graph recommendations
+      const { data: properties, error: propertiesError } = await supabase
+        .from('property')
+        .select('*')
+        .not('id', 'in', `(${seenPropertyIds.join(',')})`)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (propertiesError) throw propertiesError
+
+      return properties?.map(property => ({
+        ...property,
+        similarity_score: 0.5,
+        reason: 'fallback'
+      })) || []
+
+    } catch (error) {
+      console.error('Error getting recommendations:', error)
+      // Final fallback to regular properties
+      return this.getProperties(limit)
+    }
   }
 
   async recordInteraction(userId: string, propertyId: string, action: 'like' | 'skip' | 'superlike') {
