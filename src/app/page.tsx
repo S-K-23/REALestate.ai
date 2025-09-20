@@ -18,6 +18,8 @@ import { LogOut, Settings } from 'lucide-react'
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAnalyzingPreferences, setIsAnalyzingPreferences] = useState(false)
+  const [hasAnalyzedPreferences, setHasAnalyzedPreferences] = useState(false)
 
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
@@ -47,6 +49,42 @@ export default function HomePage() {
     // Clear user from localStorage and state
     localStorage.removeItem('realagent-user')
     setUser(null)
+  }
+
+  const handlePreferenceAnalysisChange = (isAnalyzing: boolean, hasAnalyzed: boolean) => {
+    setIsAnalyzingPreferences(isAnalyzing)
+    setHasAnalyzedPreferences(hasAnalyzed)
+  }
+
+  const handleResetSentimentAnalysis = async () => {
+    if (!user) return
+    
+    try {
+      const response = await fetch('/api/reset-sentiment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to reset sentiment analysis')
+      }
+
+      const result = await response.json()
+      console.log('🎉 Sentiment analysis reset:', result.message)
+      
+      // Reset the analysis states
+      setIsAnalyzingPreferences(false)
+      setHasAnalyzedPreferences(false)
+      
+      // Reload the page to start fresh
+      window.location.reload()
+      
+    } catch (error) {
+      console.error('Error resetting sentiment analysis:', error)
+    }
   }
 
   if (loading) {
@@ -111,6 +149,16 @@ export default function HomePage() {
               <p className="text-sm text-gray-600">Discover your perfect property</p>
             </div>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleResetSentimentAnalysis}
+                className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                title="Reset sentiment analysis and start fresh"
+              >
+                <span className="mr-2">🧠</span>
+                Reset AI
+              </Button>
               <Button variant="ghost" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
@@ -130,13 +178,20 @@ export default function HomePage() {
           {/* Property Stack - Takes up 3/4 of the width */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm border h-full">
-              <PropertyStack userId={user.id} />
+              <PropertyStack 
+                userId={user.id} 
+                onPreferenceAnalysisChange={handlePreferenceAnalysisChange}
+              />
             </div>
           </div>
 
           {/* Advisor Sidebar - Takes up 1/4 of the width */}
           <div className="lg:col-span-1">
-            <AdvisorSidebar userId={user.id} />
+            <AdvisorSidebar 
+              userId={user.id} 
+              isAnalyzingPreferences={isAnalyzingPreferences}
+              hasAnalyzedPreferences={hasAnalyzedPreferences}
+            />
           </div>
         </div>
       </main>

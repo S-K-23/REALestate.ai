@@ -8,6 +8,8 @@ import { Brain, TrendingUp, MapPin, DollarSign, Home } from 'lucide-react'
 
 interface AdvisorSidebarProps {
   userId: string
+  isAnalyzingPreferences?: boolean
+  hasAnalyzedPreferences?: boolean
 }
 
 interface UserPreferences {
@@ -24,7 +26,7 @@ interface AdvisorMessage {
   icon: React.ReactNode
 }
 
-export default function AdvisorSidebar({ userId }: AdvisorSidebarProps) {
+export default function AdvisorSidebar({ userId, isAnalyzingPreferences = false, hasAnalyzedPreferences = false }: AdvisorSidebarProps) {
   const [preferences, setPreferences] = useState<UserPreferences>({})
   const [messages, setMessages] = useState<AdvisorMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,6 +34,22 @@ export default function AdvisorSidebar({ userId }: AdvisorSidebarProps) {
   useEffect(() => {
     loadUserPreferences()
   }, [userId])
+
+  useEffect(() => {
+    if (isAnalyzingPreferences) {
+      setMessages([{
+        type: 'preference',
+        message: "🧠 I'm analyzing your preferences based on your likes! This will help me find better matches for you.",
+        icon: <Brain className="w-5 h-5" />
+      }])
+    } else if (hasAnalyzedPreferences) {
+      setMessages([{
+        type: 'preference',
+        message: "✨ Great! I've analyzed your preferences and updated my recommendations. You should now see more personalized property matches!",
+        icon: <Brain className="w-5 h-5" />
+      }])
+    }
+  }, [isAnalyzingPreferences, hasAnalyzedPreferences])
 
   const loadUserPreferences = async () => {
     try {
