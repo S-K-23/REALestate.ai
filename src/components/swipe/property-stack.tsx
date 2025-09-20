@@ -7,19 +7,32 @@ import { backendService } from '@/lib/backend-service'
 
 interface PropertyStackProps {
   userId: string
+  onPreferenceAnalysisChange?: (isAnalyzing: boolean, hasAnalyzed: boolean) => void
 }
 
-export default function PropertyStack({ userId }: PropertyStackProps) {
+export default function PropertyStack({ userId, onPreferenceAnalysisChange }: PropertyStackProps) {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [viewedProperties, setViewedProperties] = useState<Set<string>>(new Set())
+  const [initialBatchCompleted, setInitialBatchCompleted] = useState(false)
+  const [hasAnalyzedPreferences, setHasAnalyzedPreferences] = useState(false)
 
   useEffect(() => {
     loadProperties()
   }, [userId])
+
+  // Notify parent component when preference analysis states change
+  useEffect(() => {
+    if (onPreferenceAnalysisChange) {
+      onPreferenceAnalysisChange(
+        initialBatchCompleted && !hasAnalyzedPreferences,
+        hasAnalyzedPreferences
+      )
+    }
+  }, [initialBatchCompleted, hasAnalyzedPreferences, onPreferenceAnalysisChange])
 
   const loadProperties = async () => {
     try {
@@ -36,10 +49,8 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
       
       setProperties(properties)
       
-      // Mark first property as viewed if it exists
-      if (properties.length > 0) {
-        setViewedProperties(new Set([properties[0].id]))
-      }
+      // Initialize viewed properties as empty - only track actual interactions
+      setViewedProperties(new Set())
     } catch (error: any) {
       console.error('Error loading properties:', error)
       setError(error.message || 'Failed to load properties')
@@ -48,11 +59,79 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
     }
   }
 
+  const analyzeUserPreferencesAndReorient = async () => {
+    try {
+      console.log('🎯 REALagent analyzing user preferences for reorientation...')
+      
+      // Get user's interactions to analyze preferences
+      const response = await fetch('/api/user-interactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get user interactions')
+      }
+
+      const data = await response.json()
+      const interactions = data.interactions || []
+      
+      // Analyze liked properties to understand preferences
+      const likedProperties = interactions
+        .filter((i: any) => i.interaction_type === 'like' || i.interaction_type === 'superlike')
+        .map((i: any) => i.property)
+        .filter(Boolean)
+
+      if (likedProperties.length === 0) {
+        console.log('📊 No liked properties found, continuing with general recommendations')
+        return
+      }
+
+      // Calculate preference insights
+      const preferences = {
+        avgPrice: likedProperties.reduce((sum: number, p: any) => sum + (p.price || 0), 0) / likedProperties.length,
+        avgBedrooms: likedProperties.reduce((sum: number, p: any) => sum + (p.bedrooms || 0), 0) / likedProperties.length,
+        avgBathrooms: likedProperties.reduce((sum: number, p: any) => sum + (p.bathrooms || 0), 0) / likedProperties.length,
+        avgSquareFeet: likedProperties.reduce((sum: number, p: any) => sum + (p.square_feet || 0), 0) / likedProperties.length,
+        preferredCities: [...new Set(likedProperties.map((p: any) => p.city).filter(Boolean))],
+        preferredPropertyTypes: [...new Set(likedProperties.map((p: any) => p.property_type).filter(Boolean))]
+      }
+
+      console.log('🧠 REALagent preference analysis:', preferences)
+
+      // Update user embedding based on preferences
+      await fetch('/api/update-user-preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      })
+
+      setHasAnalyzedPreferences(true)
+      console.log('✅ User preferences analyzed and embedding updated for personalized recommendations')
+      
+    } catch (error) {
+      console.error('Error analyzing user preferences:', error)
+    }
+  }
+
   const loadMoreProperties = async () => {
+    if (loadingMore) return // Prevent multiple concurrent loads
+    
     try {
       setLoadingMore(true)
       
-      // Try to get more recommendations first
+      // Check if we've completed the initial batch and should analyze preferences
+      if (currentIndex >= 20 && !initialBatchCompleted && !hasAnalyzedPreferences) {
+        setInitialBatchCompleted(true)
+        await analyzeUserPreferencesAndReorient()
+      }
+      
+      // Try to get more recommendations first (now with updated user preferences)
       let newProperties = await backendService.getRecommendations(userId, 10)
       
       // If no recommendations, get regular properties
@@ -60,11 +139,12 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
         newProperties = await backendService.getProperties(10)
       }
       
-      // Filter out properties that have already been viewed
-      const filteredProperties = newProperties.filter(property => !viewedProperties.has(property.id))
-      
-      // Add new properties to the existing list
-      setProperties(prev => [...prev, ...filteredProperties])
+      // Filter out properties that are already in the current list
+      setProperties(prev => {
+        const existingIds = new Set(prev.map(p => p.id))
+        const filteredProperties = newProperties.filter(property => !existingIds.has(property.id))
+        return [...prev, ...filteredProperties]
+      })
     } catch (error: any) {
       console.error('Error loading more properties:', error)
     } finally {
@@ -104,7 +184,7 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
       setCurrentIndex(prev => prev + 1)
 
       // If we're running low on properties, load more
-      if (currentIndex >= properties.length - 3) {
+      if (currentIndex >= properties.length - 5) {
         await loadMoreProperties()
       }
     } catch (error) {
@@ -207,6 +287,26 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
       {loadingMore && (
         <div className="absolute top-4 right-4 z-20 bg-white/90 rounded-full p-3 shadow-lg">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      {/* REALagent preference analysis indicator */}
+      {initialBatchCompleted && !hasAnalyzedPreferences && (
+        <div className="absolute top-4 right-4 z-20 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-4 py-2 shadow-lg">
+          <div className="flex items-center space-x-2">
+            <div className="animate-pulse">🧠</div>
+            <span className="text-sm font-medium">REALagent analyzing...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Preference analysis completed indicator */}
+      {hasAnalyzedPreferences && currentIndex >= 20 && (
+        <div className="absolute top-4 right-4 z-20 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-4 py-2 shadow-lg">
+          <div className="flex items-center space-x-2">
+            <span>✨</span>
+            <span className="text-sm font-medium">Personalized!</span>
+          </div>
         </div>
       )}
 
