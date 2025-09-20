@@ -210,12 +210,7 @@ export default function PropertyStack({ userId }: PropertyStackProps) {
         </div>
       )}
 
-      {/* Property counter */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 bg-white/90 rounded-full px-4 py-2 shadow-lg">
-        <span className="text-sm font-medium text-gray-700">
-          {currentIndex + 1} of {properties.length}
-        </span>
-      </div>
+      
 
       {/* Show next 2-3 properties stacked behind */}
       {properties.slice(currentIndex, currentIndex + 3).map((property, index) => (
