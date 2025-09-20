@@ -49,17 +49,11 @@ export class BackendService {
 
       const seenPropertyIds = interactions?.map(i => i.property_id) || []
 
-      // Use server client for recommendations
-      const serverClient = createServerClient()
-      
-      // Verify server client is working
-      if (!serverClient) {
-        console.error('Failed to create server client')
-        return this.getProperties(limit)
-      }
+          // Use regular client for client-side operations
+          // Note: This method should only be called from API routes for server-side operations
 
       // Check if user has an embedding for vector search
-      const { data: userData, error: userError } = await serverClient
+      const { data: userData, error: userError } = await supabase
         .from('app_user')
         .select('user_embedding')
         .eq('id', userId)
@@ -75,7 +69,7 @@ export class BackendService {
         console.log('🎯 User embedding length:', userEmbedding.length)
         
         // Get all properties with embeddings
-        let query = serverClient
+        let query = supabase
           .from('property')
           .select('*')
           .not('property_embedding', 'is', null)
@@ -114,7 +108,7 @@ export class BackendService {
       console.log('🔗 Using graph traversal (no user embedding)')
       
       try {
-        const { data: edges, error: edgesError } = await serverClient
+        const { data: edges, error: edgesError } = await supabase
           .from('edge')
           .select('target_property_id, similarity_score')
           .order('similarity_score', { ascending: false })
@@ -136,7 +130,7 @@ export class BackendService {
         const propertyIds = edges.map(edge => edge.target_property_id)
         
         // Get full property data
-        const { data: properties, error: propertiesError } = await serverClient
+        const { data: properties, error: propertiesError } = await supabase
           .from('property')
           .select('*')
           .in('id', propertyIds)
@@ -177,7 +171,7 @@ export class BackendService {
 
       // Final fallback to regular properties
       console.log('📋 Using fallback properties')
-      let fallbackQuery = serverClient
+      let fallbackQuery = supabase
         .from('property')
         .select('*')
         .order('created_at', { ascending: false })

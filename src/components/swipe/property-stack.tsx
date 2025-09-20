@@ -3,11 +3,32 @@
 import { useState, useEffect } from 'react'
 import { Property } from '@/types/database'
 import PropertyCard from './property-card'
+import PropertyFilter from '../filters/property-filter'
 import { backendService } from '@/lib/backend-service'
 
 interface PropertyStackProps {
   userId: string
   onPreferenceAnalysisChange?: (isAnalyzing: boolean, hasAnalyzed: boolean) => void
+}
+
+interface FilterState {
+  minPrice: number | null
+  maxPrice: number | null
+  minSqft: number | null
+  maxSqft: number | null
+  minBedrooms: number | null
+  maxBedrooms: number | null
+  minBathrooms: number | null
+  maxBathrooms: number | null
+  states: string[]
+  cities: string[]
+  propertyTypes: string[]
+  minYear: number | null
+  maxYear: number | null
+  minLotSize: number | null
+  maxLotSize: number | null
+  orderBy: string
+  orderDirection: 'asc' | 'desc'
 }
 
 export default function PropertyStack({ userId, onPreferenceAnalysisChange }: PropertyStackProps) {
@@ -19,10 +40,42 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
   const [viewedProperties, setViewedProperties] = useState<Set<string>>(new Set())
   const [initialBatchCompleted, setInitialBatchCompleted] = useState(false)
   const [hasAnalyzedPreferences, setHasAnalyzedPreferences] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState<FilterState>({
+    minPrice: null,
+    maxPrice: null,
+    minSqft: null,
+    maxSqft: null,
+    minBedrooms: null,
+    maxBedrooms: null,
+    minBathrooms: null,
+    maxBathrooms: null,
+    states: [],
+    cities: [],
+    propertyTypes: [],
+    minYear: null,
+    maxYear: null,
+    minLotSize: null,
+    maxLotSize: null,
+    orderBy: 'created_at',
+    orderDirection: 'desc'
+  })
+  const [hasActiveFilters, setHasActiveFilters] = useState(false)
 
   useEffect(() => {
     loadProperties()
   }, [userId])
+
+  // Check if filters are active
+  useEffect(() => {
+    const isActive = Object.values(filters).some(value => {
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
+      return value !== null && value !== '' && value !== 'created_at' && value !== 'desc'
+    })
+    setHasActiveFilters(isActive)
+  }, [filters])
 
   // Notify parent component when preference analysis states change
   useEffect(() => {
@@ -34,19 +87,69 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
     }
   }, [initialBatchCompleted, hasAnalyzedPreferences, onPreferenceAnalysisChange])
 
+  const loadFilteredProperties = async (appliedFilters: FilterState) => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/properties/filter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...appliedFilters,
+          userId,
+          limit: 50
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProperties(data.properties || [])
+        setCurrentIndex(0)
+        setViewedProperties(new Set())
+      } else {
+        throw new Error('Failed to load filtered properties')
+      }
+    } catch (error: any) {
+      console.error('Error loading filtered properties:', error)
+      setError(error.message || 'Failed to load properties')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const loadProperties = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      // Try to get recommendations first
-      let properties = await backendService.getRecommendations(userId, 50)
-      
-      // If no recommendations, get regular properties
-      if (!properties || properties.length === 0) {
-        properties = await backendService.getProperties(50)
+      // Try to get recommendations first via API route
+      try {
+        const response = await fetch('/api/recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, limit: 50 }),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.recommendations && data.recommendations.length > 0) {
+            setProperties(data.recommendations)
+            // Initialize viewed properties as empty - only track actual interactions
+            setViewedProperties(new Set())
+            return
+          }
+        }
+      } catch (recommendationError) {
+        console.log('Recommendations API failed, falling back to regular properties:', recommendationError)
       }
       
+      // Fallback to regular properties
+      const properties = await backendService.getProperties(50)
       setProperties(properties)
       
       // Initialize viewed properties as empty - only track actual interactions
@@ -202,21 +305,67 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
     try {
       setLoading(true)
       
-      // Get personalized recommendations
-      const recommendations = await backendService.getRecommendations(userId, 20)
-      
-      if (recommendations && recommendations.length > 0) {
-        setProperties(prev => [...prev, ...recommendations])
-      } else {
-        // Fallback to regular properties if no recommendations
-        const regularProperties = await backendService.getProperties(20)
-        setProperties(prev => [...prev, ...regularProperties])
+      // Get personalized recommendations via API route
+      try {
+        const response = await fetch('/api/recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, limit: 20 }),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.recommendations && data.recommendations.length > 0) {
+            setProperties(prev => [...prev, ...data.recommendations])
+            return
+          }
+        }
+      } catch (recommendationError) {
+        console.log('Recommendations API failed, falling back to regular properties:', recommendationError)
       }
+      
+      // Fallback to regular properties if no recommendations
+      const regularProperties = await backendService.getProperties(20)
+      setProperties(prev => [...prev, ...regularProperties])
     } catch (error) {
       console.error('Error loading recommendations:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+  }
+
+  const handleApplyFilters = (appliedFilters: FilterState) => {
+    loadFilteredProperties(appliedFilters)
+  }
+
+  const clearFilters = () => {
+    const clearedFilters: FilterState = {
+      minPrice: null,
+      maxPrice: null,
+      minSqft: null,
+      maxSqft: null,
+      minBedrooms: null,
+      maxBedrooms: null,
+      minBathrooms: null,
+      maxBathrooms: null,
+      states: [],
+      cities: [],
+      propertyTypes: [],
+      minYear: null,
+      maxYear: null,
+      minLotSize: null,
+      maxLotSize: null,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    }
+    setFilters(clearedFilters)
+    loadProperties() // Load regular properties without filters
   }
 
   const currentProperty = properties[currentIndex]
@@ -283,9 +432,38 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
         </button>
       )}
 
+      {/* Filter button */}
+      <button
+        onClick={() => setShowFilters(true)}
+        className={`absolute top-4 right-4 z-20 rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105 ${
+          hasActiveFilters 
+            ? 'bg-blue-600 text-white' 
+            : 'bg-white/90 hover:bg-white text-gray-800'
+        }`}
+        title="Filter properties"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+        </svg>
+        {hasActiveFilters && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+        )}
+      </button>
+
+      {/* Clear filters button - only show when filters are active */}
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          className="absolute top-16 right-4 z-20 bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-1 text-sm shadow-lg transition-all duration-200"
+          title="Clear all filters"
+        >
+          Clear Filters
+        </button>
+      )}
+
       {/* Loading indicator for more properties */}
       {loadingMore && (
-        <div className="absolute top-4 right-4 z-20 bg-white/90 rounded-full p-3 shadow-lg">
+        <div className="absolute top-20 right-4 z-20 bg-white/90 rounded-full p-3 shadow-lg">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
         </div>
       )}
@@ -321,6 +499,15 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
           isTop={index === 0}
         />
       ))}
+
+      {/* Property Filter Modal */}
+      <PropertyFilter
+        userId={userId}
+        onFiltersChange={handleFiltersChange}
+        onApplyFilters={handleApplyFilters}
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+      />
     </div>
   )
 }
