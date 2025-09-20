@@ -142,7 +142,7 @@ export default function PropertyStack({ userId, onPreferenceAnalysisChange }: Pr
       // Filter out properties that are already in the current list
       setProperties(prev => {
         const existingIds = new Set(prev.map(p => p.id))
-        const filteredProperties = newProperties.filter(property => !existingIds.has(property.id))
+        const filteredProperties = newProperties.filter((property: Property) => !existingIds.has(property.id))
         return [...prev, ...filteredProperties]
       })
     } catch (error: any) {
