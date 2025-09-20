@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { createServerClient } from './supabase'
 
 export class BackendService {
   private useSupabase: boolean = false
@@ -48,25 +49,94 @@ export class BackendService {
 
       const seenPropertyIds = interactions?.map(i => i.property_id) || []
 
-      // Try to get recommendations using graph traversal
-      const { data: edges, error: edgesError } = await supabase
-        .from('edge')
-        .select('target_property_id, similarity_score')
-        .order('similarity_score', { ascending: false })
-        .limit(limit * 2) // Get more to filter out seen properties
-
-      if (edgesError) {
-        console.error('Error getting graph edges:', edgesError)
-        // Fallback to regular properties
+      // Use server client for recommendations
+      const serverClient = createServerClient()
+      
+      // Verify server client is working
+      if (!serverClient) {
+        console.error('Failed to create server client')
         return this.getProperties(limit)
       }
 
-      if (edges && edges.length > 0) {
+      // Check if user has an embedding for vector search
+      const { data: userData, error: userError } = await serverClient
+        .from('app_user')
+        .select('user_embedding')
+        .eq('id', userId)
+        .single()
+
+      console.log('🔍 User data query result:', { userData, userError })
+
+      const userEmbedding = userData?.user_embedding
+
+      if (userEmbedding) {
+        console.log('🎯 Using vector search with user embedding')
+        console.log('🎯 User embedding type:', typeof userEmbedding)
+        console.log('🎯 User embedding length:', userEmbedding.length)
+        
+        // Get all properties with embeddings
+        let query = serverClient
+          .from('property')
+          .select('*')
+          .not('property_embedding', 'is', null)
+
+        // Filter out seen properties if any
+        if (seenPropertyIds.length > 0) {
+          query = query.not('id', 'in', `(${seenPropertyIds.join(',')})`)
+        }
+
+        const { data: allProperties, error: propertiesError } = await query
+
+        if (propertiesError) {
+          console.error('Error getting properties for vector search:', propertiesError)
+          return this.getProperties(limit)
+        }
+
+        if (allProperties && allProperties.length > 0) {
+          // Calculate vector similarities
+          const recommendations = allProperties.map(property => {
+            const similarity = this.calculateVectorSimilarity(userEmbedding, property.property_embedding)
+            return {
+              ...property,
+              similarity_score: similarity,
+              reason: 'vector_similarity'
+            }
+          })
+          .sort((a, b) => b.similarity_score - a.similarity_score)
+          .slice(0, limit)
+
+          console.log(`🎯 Vector search returned ${recommendations.length} recommendations`)
+          return recommendations
+        }
+      }
+
+      // Fallback to graph traversal if no user embedding
+      console.log('🔗 Using graph traversal (no user embedding)')
+      
+      try {
+        const { data: edges, error: edgesError } = await serverClient
+          .from('edge')
+          .select('target_property_id, similarity_score')
+          .order('similarity_score', { ascending: false })
+          .limit(limit * 2) // Get more to filter out seen properties
+
+        if (edgesError) {
+          console.error('Error getting graph edges:', edgesError)
+          console.error('Error details:', JSON.stringify(edgesError, null, 2))
+          // Fallback to regular properties
+          return this.getProperties(limit)
+        }
+
+        if (!edges || edges.length === 0) {
+          console.log('📊 No graph edges found, using fallback')
+          return this.getProperties(limit)
+        }
+
         // Get property IDs from edges
         const propertyIds = edges.map(edge => edge.target_property_id)
         
         // Get full property data
-        const { data: properties, error: propertiesError } = await supabase
+        const { data: properties, error: propertiesError } = await serverClient
           .from('property')
           .select('*')
           .in('id', propertyIds)
@@ -95,17 +165,30 @@ export class BackendService {
         const recommendations = Array.from(uniqueProperties.values())
         
         if (recommendations.length > 0) {
+          console.log(`🔗 Graph traversal returned ${recommendations.length} recommendations`)
           return recommendations
         }
+
+      } catch (graphError) {
+        console.error('Error in graph traversal:', graphError)
+        // Fallback to regular properties
+        return this.getProperties(limit)
       }
 
-      // Fallback to regular properties if no graph recommendations
-      const { data: properties, error: propertiesError } = await supabase
+      // Final fallback to regular properties
+      console.log('📋 Using fallback properties')
+      let fallbackQuery = serverClient
         .from('property')
         .select('*')
-        .not('id', 'in', `(${seenPropertyIds.join(',')})`)
         .order('created_at', { ascending: false })
         .limit(limit)
+
+      // Filter out seen properties if any
+      if (seenPropertyIds.length > 0) {
+        fallbackQuery = fallbackQuery.not('id', 'in', `(${seenPropertyIds.join(',')})`)
+      }
+
+      const { data: properties, error: propertiesError } = await fallbackQuery
 
       if (propertiesError) throw propertiesError
 
@@ -119,6 +202,50 @@ export class BackendService {
       console.error('Error getting recommendations:', error)
       // Final fallback to regular properties
       return this.getProperties(limit)
+    }
+  }
+
+  private calculateVectorSimilarity(userEmbedding: any, propertyEmbedding: any): number {
+    try {
+      // Parse embeddings if they're strings
+      const userVec = typeof userEmbedding === 'string' ? JSON.parse(userEmbedding) : userEmbedding
+      const propertyVec = typeof propertyEmbedding === 'string' ? JSON.parse(propertyEmbedding) : propertyEmbedding
+
+      if (!Array.isArray(userVec) || !Array.isArray(propertyVec)) {
+        return 0.5 // Default similarity if embeddings are invalid
+      }
+
+      // Calculate cosine similarity
+      let dotProduct = 0
+      let userMagnitude = 0
+      let propertyMagnitude = 0
+
+      const minLength = Math.min(userVec.length, propertyVec.length)
+
+      for (let i = 0; i < minLength; i++) {
+        const userVal = userVec[i] || 0
+        const propertyVal = propertyVec[i] || 0
+        
+        dotProduct += userVal * propertyVal
+        userMagnitude += userVal * userVal
+        propertyMagnitude += propertyVal * propertyVal
+      }
+
+      userMagnitude = Math.sqrt(userMagnitude)
+      propertyMagnitude = Math.sqrt(propertyMagnitude)
+
+      if (userMagnitude === 0 || propertyMagnitude === 0) {
+        return 0.5 // Default similarity if magnitude is zero
+      }
+
+      const similarity = dotProduct / (userMagnitude * propertyMagnitude)
+      
+      // Normalize similarity to 0-1 range (cosine similarity is -1 to 1)
+      return (similarity + 1) / 2
+
+    } catch (error) {
+      console.error('Error calculating vector similarity:', error)
+      return 0.5 // Default similarity on error
     }
   }
 
