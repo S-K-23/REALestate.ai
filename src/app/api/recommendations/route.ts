@@ -83,6 +83,15 @@ export async function POST(request: NextRequest) {
           
           return {
             ...property,
+            title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+            price: `$${property.price?.toLocaleString() || 'N/A'}`,
+            location: `${property.city}, ${property.state}`,
+            type: property.property_type || 'Unknown',
+            bedrooms: property.bedrooms || 0,
+            bathrooms: property.bathrooms || 0,
+            area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+            image: property.images && property.images.length > 0 ? property.images[0] : null,
+            description: property.description || 'No description available',
             similarity_score: distanceScore,
             distance_km: distance,
             reason: 'location_priority'
@@ -145,14 +154,23 @@ export async function POST(request: NextRequest) {
         // Fallback to graph traversal
       } else if (allProperties && allProperties.length > 0) {
         // Calculate vector similarities
-        const recommendations = allProperties.map(property => {
-          const similarity = calculateVectorSimilarity(userEmbedding, property.property_embedding)
-          return {
-            ...property,
-            similarity_score: similarity,
-            reason: 'vector_similarity'
-          }
-        })
+             const recommendations = allProperties.map(property => {
+               const similarity = calculateVectorSimilarity(userEmbedding, property.property_embedding)
+               return {
+                 ...property,
+                 title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+                 price: `$${property.price?.toLocaleString() || 'N/A'}`,
+                 location: `${property.city}, ${property.state}`,
+                 type: property.property_type || 'Unknown',
+                 bedrooms: property.bedrooms || 0,
+                 bathrooms: property.bathrooms || 0,
+                 area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+                 image: property.images && property.images.length > 0 ? property.images[0] : null,
+                 description: property.description || 'No description available',
+                 similarity_score: similarity,
+                 reason: 'vector_similarity'
+               }
+             })
         .sort((a, b) => b.similarity_score - a.similarity_score)
         .slice(0, limit)
 
@@ -196,12 +214,21 @@ export async function POST(request: NextRequest) {
           
           for (const edge of edges) {
             const property = properties.find(p => p.id === edge.target_property_id)
-            if (property && !seenPropertyIds.includes(property.id) && !uniqueProperties.has(property.id)) {
-              uniqueProperties.set(property.id, {
-                ...property,
-                similarity_score: edge.similarity_score,
-                reason: 'graph_traversal'
-              })
+                 if (property && !seenPropertyIds.includes(property.id) && !uniqueProperties.has(property.id)) {
+                   uniqueProperties.set(property.id, {
+                     ...property,
+                     title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+                     price: `$${property.price?.toLocaleString() || 'N/A'}`,
+                     location: `${property.city}, ${property.state}`,
+                     type: property.property_type || 'Unknown',
+                     bedrooms: property.bedrooms || 0,
+                     bathrooms: property.bathrooms || 0,
+                     area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+                     image: property.images && property.images.length > 0 ? property.images[0] : null,
+                     description: property.description || 'No description available',
+                     similarity_score: edge.similarity_score,
+                     reason: 'graph_traversal'
+                   })
               
               if (uniqueProperties.size >= limit) break
             }
@@ -242,11 +269,20 @@ export async function POST(request: NextRequest) {
       throw propertiesError
     }
 
-    let recommendations = properties?.map(property => ({
-      ...property,
-      similarity_score: 0.5,
-      reason: 'fallback'
-    })) || []
+         let recommendations = properties?.map(property => ({
+           ...property,
+           title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+           price: `$${property.price?.toLocaleString() || 'N/A'}`,
+           location: `${property.city}, ${property.state}`,
+           type: property.property_type || 'Unknown',
+           bedrooms: property.bedrooms || 0,
+           bathrooms: property.bathrooms || 0,
+           area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+           image: property.images && property.images.length > 0 ? property.images[0] : null,
+           description: property.description || 'No description available',
+           similarity_score: 0.5,
+           reason: 'fallback'
+         })) || []
 
     console.log(`🎯 Got ${recommendations.length} recommendations`)
     const response = NextResponse.json({ recommendations })
