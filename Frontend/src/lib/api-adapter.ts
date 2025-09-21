@@ -178,6 +178,28 @@ export const recordInteraction = async (userId: string, propertyId: string, inte
   }
 };
 
+//Get a single property by ID
+export const getPropertyById = async (propertyId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if(!response.ok) {
+      throw new Error('Failed to get property by ID');
+    }
+
+    const backendProperty: BackendProperty = await response.json();
+    return adaptBackendProperty(backendProperty);
+  } catch(error) {
+    console.error('Error getting property by ID:', error);
+    return null;
+  }
+}
+
 // Matches functions
 export const loadMatches = async (userId: string) => {
   try {

@@ -11,6 +11,7 @@ import FilterPanel from '@/components/FilterPanel';
 import Auth from '@/pages/Auth';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import Chat from '@/components/Chat';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { generatePropertiesForLocation } from '@/data/mockProperties';
 import { getLocationFromCoordinates } from '@/utils/locationUtils';
@@ -416,6 +417,7 @@ const Index = () => {
           onClose={() => setShowMatches(false)}
         />
       </div>
+
     </SidebarProvider>
   );
 };

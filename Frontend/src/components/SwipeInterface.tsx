@@ -6,6 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useMatches } from '@/contexts/MatchesContext';
 import MatchesModal from './MatchesModal';
 import AdvisorSidebar from './AdvisorSidebar';
+import Chat from './Chat';
 
 interface Pin {
   id: string;
@@ -451,6 +452,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       <div className="absolute bottom-4 left-6 bg-gray-900/50 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg z-[9999]">
         <span className="text-lg font-bebas tracking-wider text-gray-300">REALestate.ai</span>
       </div>
+      <Chat />
     </div>
   );
 };
