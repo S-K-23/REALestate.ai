@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 200 })
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  return response
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json()
@@ -38,12 +46,24 @@ export async function POST(request: NextRequest) {
         property: properties?.find(p => p.id === interaction.property_id)
       }))
 
-      return NextResponse.json({ interactions })
+      const response = NextResponse.json({ interactions })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
     }
 
-    return NextResponse.json({ interactions: [] })
+    const response = NextResponse.json({ interactions: [] })
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return response
   } catch (error: any) {
     console.error('Error getting user interactions:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const response = NextResponse.json({ error: error.message }, { status: 500 })
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return response
   }
 }

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 200 })
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  return response
+}
+
 export async function POST(request: NextRequest) {
   try {
     const filters = await request.json()
@@ -119,11 +127,18 @@ export async function POST(request: NextRequest) {
       await updateUserPreferencesFromFilters(filters.userId, filters, serverClient)
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       properties: properties || [],
       count: properties?.length || 0,
       filters: filters
     })
+    
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    
+    return response
 
   } catch (error: any) {
     console.error('Error in filter API:', error)
