@@ -5,6 +5,7 @@ import { MessageCircle, X, Send, Bot, User, Home } from 'lucide-react'
 import { PropertyCardChat } from './PropertyCardChat'
 import { getPropertyById } from '@/lib/api-adapter'
 import { Property } from './PropertyCard'
+import { openai } from '@/lib/openai-client' // Uncomment to use OpenAI API
 
 
 interface Message {
@@ -16,14 +17,18 @@ interface Message {
   type?: 'text' | 'property'
 }
 
-const HARDCODED_RESPONSES = [
-  "Hello, I'm your AI real estate assistant. What are you looking for?",
-  "Certainly! Let me take a a look.",
-
-]
 
 const PROPERTY_ID = [
     '0b40c6aa-527d-4ce7-904a-d9b0ee7e7a86'
+]
+
+const HARDCODED_RESPONSES = [
+  "Hello, I'm your AI real estate assistant. What are you looking for?",
+  "Certainly! Let me take a look.",
+  "I'd be happy to help you find the perfect property!",
+  "That sounds interesting! Let me show you some options.",
+  "Great choice! I can help you explore that area.",
+  "I understand your needs. Let me find some matches for you."
 ]
 
 export default function Chat() {
@@ -65,8 +70,8 @@ export default function Chat() {
     setIsTyping(true)
 
     // Simulate AI response delay
-    setTimeout(async() => {
-        let botMessage: Message
+    setTimeout(async () => {
+      let botMessage: Message
       
       setCount(prev => prev + 1)
       
@@ -74,38 +79,44 @@ export default function Chat() {
         const propertyId = PROPERTY_ID[Math.floor(Math.random() * PROPERTY_ID.length)]
         const property = await getPropertyById(propertyId)
         if(property) {
-            botMessage = {
-                id: (Date.now() + 1).toString(),
-                text: "Here's a property that meets that criteria",
-                sender: 'bot',
-                timestamp: new Date(),
-                property: property,
-                type: 'property'
-            }
+          botMessage = {
+            id: (Date.now() + 1).toString(),
+            text: "Here's a property that meets that criteria",
+            sender: 'bot',
+            timestamp: new Date(),
+            property: property,
+            type: 'property'
+          }
         } else {
-            botMessage = {
-                id: (Date.now() + 1).toString(),
-                text: "I couldn't find a property that meets that criteria",
-                sender: 'bot',
-                timestamp: new Date(),
-                type: 'text'
-            }
+          botMessage = {
+            id: (Date.now() + 1).toString(),
+            text: "I couldn't find a property that meets that criteria",
+            sender: 'bot',
+            timestamp: new Date(),
+            type: 'text'
+          }
         }
       } else {
-        //Regular text response
-        const randomResponse = HARDCODED_RESPONSES[count]
+        
+        // const openaiResponse = await openai.chat([
+        //  { role: 'system', content: 'You are a helpful real estate assistant.' },
+        //  { role: 'user', content: inputText }
+        //])
+        // Extract the AI's message from the response
+        // const aiMessage = openaiResponse.choices[0].message.content
+        
+        const randomResponse = HARDCODED_RESPONSES[count % HARDCODED_RESPONSES.length]
         botMessage = {
-            id: (Date.now() + 1).toString(),
-            text: randomResponse,
-            sender: 'bot',
-            timestamp: new Date()
-          }
+          id: (Date.now() + 1).toString(),
+          text: randomResponse,
+          sender: 'bot',
+          timestamp: new Date()
+        }
       }
       
-
       setMessages(prev => [...prev, botMessage])
       setIsTyping(false)
-    }, 2000 + Math.random() * 3000) // 1-3 second delay
+    }, 2000 + Math.random() * 3000) 
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
