@@ -1,196 +1,281 @@
-# REALagent - Tinder for Real Estate
+# REALestate.ai - AI-Powered Real Estate Discovery
 
-REALagent is a real estate discovery platform that combines the swiping experience of Tinder with intelligent, agentic backend processes. Users can like, skip, or superlike properties, while an AI-powered backend adapts recommendations in real-time.
+REALestate.ai is a modern real estate discovery platform that combines intelligent property recommendations with an intuitive swipe interface. Users can explore properties through location-based search, apply advanced filters, and get personalized recommendations powered by AI.
 
-## Features
+## 🏠 Features
 
-- 🏠 **Tinder-style Swipe Interface**: Intuitive property discovery with swipe gestures
-- 🤖 **AI-Powered Recommendations**: Adaptive recommendations using vector embeddings and graph relationships
-- 📊 **REALagent Advisor**: AI sidebar that provides personalized insights based on user preferences
-- 🔄 **Real-time Updates**: Live property updates using Supabase Realtime
-- 📱 **Mobile-First Design**: Responsive design optimized for mobile devices
+- **🗺️ Interactive Map Interface**: Browse properties on an interactive map with location-based search
+- **📱 Swipe Interface**: Tinder-style property discovery with intuitive swipe gestures
+- **🔍 Advanced Filtering**: Filter by price, bedrooms, bathrooms, property type, year built, cap rate, and more
+- **📍 Location-Based Search**: Search within customizable radius (10km - 1000km)
+- **🤖 AI Recommendations**: Intelligent property recommendations with fallback mechanisms
+- **📊 Real-Time Updates**: Live property data and user interactions
+- **💻 Responsive Design**: Optimized for both desktop and mobile devices
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Supabase
-- **Database**: PostgreSQL with pgvector for similarity search
+- **Frontend**: Vite + React + TypeScript + Tailwind CSS
+- **Backend**: Next.js API Routes + Supabase
+- **Database**: PostgreSQL with Supabase
 - **Authentication**: Supabase Auth
-- **Worker**: Python with sentence-transformers for embeddings
-- **Deployment**: Vercel (Frontend), Railway (Worker)
+- **Styling**: Tailwind CSS + Shadcn/ui components
+- **Maps**: Custom map implementation with location search
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- Python 3.8+
-- Supabase account
-- Vercel account (for deployment)
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (free tier available)
 
-### 1. Clone and Setup
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd REALestate
-npm install
 ```
 
-### 2. Environment Setup
-
-Copy the example environment files:
+### 2. Backend Setup
 
 ```bash
-cp env.example .env.local
-cp worker/env.example worker/.env
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env.local
 ```
 
-Update the environment variables in `.env.local`:
+Update `.env.local` with your Supabase credentials:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 ### 3. Database Setup
 
-1. Create a new Supabase project
-2. Run the SQL schema from `supabase/schema.sql`
-3. Enable Row Level Security (RLS) policies
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Go to the SQL Editor in your Supabase dashboard
+3. Run the database schema (create tables for properties, users, interactions)
 
-### 4. Data Ingestion
-
-Set up the Python worker:
+### 4. Frontend Setup
 
 ```bash
-cd worker
-pip install -r requirements.txt
-python data_ingestion.py
+cd Frontend
+npm install
 ```
 
-### 5. Development
+### 5. Start Development Servers
 
+**Backend (Terminal 1):**
 ```bash
 npm run dev
+# Runs on http://localhost:3000
 ```
 
-Visit `http://localhost:3000` to see the application.
+**Frontend (Terminal 2):**
+```bash
+cd Frontend
+npm run dev
+# Runs on http://localhost:8080
+```
 
-## Project Structure
+### 6. Access the Application
+
+Open your browser and navigate to `http://localhost:8080` to see REALestate.ai in action!
+
+## 📁 Project Structure
 
 ```
 REALestate/
-├── src/
-│   ├── app/                 # Next.js app router
-│   │   ├── api/            # API routes
-│   │   ├── globals.css     # Global styles
-│   │   ├── layout.tsx      # Root layout
-│   │   └── page.tsx        # Home page
-│   ├── components/
-│   │   ├── auth/           # Authentication components
-│   │   ├── realagent/      # AI advisor components
-│   │   ├── swipe/          # Property swipe components
-│   │   └── ui/             # Reusable UI components
-│   ├── lib/                # Utility functions
-│   └── types/              # TypeScript type definitions
-├── worker/                 # Python data ingestion worker
-├── supabase/               # Database schema and migrations
+├── src/                          # Backend (Next.js)
+│   ├── app/
+│   │   ├── api/                 # API endpoints
+│   │   │   └── recommendations/ # Property recommendations API
+│   │   └── globals.css          # Global styles
+│   ├── lib/
+│   │   ├── supabase.ts          # Supabase client
+│   │   └── backend-service.ts   # Backend utilities
+│   └── components/              # Backend components
+├── Frontend/                     # Frontend (Vite + React)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── SwipeInterface.tsx    # Main swipe interface
+│   │   │   ├── FilterPanel.tsx       # Property filters
+│   │   │   ├── PropertyCard.tsx      # Individual property cards
+│   │   │   └── ui/                   # Reusable UI components
+│   │   ├── pages/
+│   │   │   └── Index.tsx             # Main page
+│   │   ├── contexts/
+│   │   │   ├── UserContext.tsx       # User management
+│   │   │   └── MatchesContext.tsx    # Property matches
+│   │   └── lib/
+│   │       └── api-adapter.ts        # Frontend API utilities
+│   └── index.html                    # Main HTML file
+├── worker/                       # Data ingestion (Python)
 └── README.md
 ```
 
-## Key Components
+## 🎯 Key Components
 
-### Property Swipe Interface
+### Map Interface
+- Interactive property browsing on a map
+- Location-based search with customizable radius
+- Property pins with hover information
 
-- `PropertyStack`: Manages the stack of property cards
-- `PropertyCard`: Individual property card with swipe functionality
-- Gesture-based interactions (swipe left/right/up)
-
-### AI Advisor (REALagent)
-
-- `AdvisorSidebar`: Provides personalized insights
-- Analyzes user preferences from swipe history
-- Generates contextual recommendations
+### Swipe Interface
+- **PropertyCard**: Individual property cards with detailed information
+- **SwipeInterface**: Main swipe container with gesture handling
+- **FilterPanel**: Advanced filtering options
+- Like/Skip functionality with real-time updates
 
 ### Recommendation Engine
+- **Location-based search**: Properties within specified radius
+- **Vector similarity**: AI-powered property matching
+- **Graph relationships**: Collaborative filtering
+- **Fallback mechanisms**: Ensures users always see properties
 
-- Vector similarity search using pgvector
-- Graph-based property relationships
-- Real-time user preference learning
+## 🔧 API Endpoints
 
-## Database Schema
+### Recommendations API
+```
+POST /api/recommendations
+```
+**Request Body:**
+```json
+{
+  "userId": "user-id",
+  "location": {
+    "lat": 41.8781,
+    "lng": -87.6298,
+    "name": "Chicago"
+  },
+  "searchRadius": 100,
+  "filters": {
+    "priceRange": [100000, 500000],
+    "bedrooms": [2, 4],
+    "propertyTypes": ["single_family", "condo"]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "recommendations": [
+    {
+      "id": "property-id",
+      "title": "3 bed condo",
+      "price": "$425,000",
+      "location": "Chicago, IL",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "area": "1,200 sq ft",
+      "image": "property-image-url",
+      "similarity_score": 0.85,
+      "reason": "location_priority"
+    }
+  ]
+}
+```
+
+## 🎨 Features in Detail
+
+### Advanced Filtering
+- **Price Range**: Set min/max property prices
+- **Bedrooms/Bathrooms**: Range-based filtering
+- **Property Types**: Single family, condo, townhouse, multi-family
+- **Square Footage**: Size-based filtering
+- **Year Built**: Construction date filtering
+- **Cap Rate**: Investment return filtering (handles null values)
+- **States**: Geographic filtering
+- **Search Radius**: 10km to 1000km radius control
+
+### Smart Recommendations
+1. **Location Priority**: Properties within search radius
+2. **Vector Similarity**: AI-powered matching based on embeddings
+3. **Graph Relationships**: Collaborative filtering from similar users
+4. **Fallback Search**: Ensures properties are always available
+
+### User Experience
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Real-time Updates**: Live property data and interactions
+- **Error Handling**: Graceful error messages and retry functionality
+- **Loading States**: Smooth loading indicators
+
+## 🚀 Deployment
+
+### Backend (Railway/Vercel)
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy automatically
+
+### Frontend (Vercel/Netlify)
+1. Build the frontend: `cd Frontend && npm run build`
+2. Deploy the `dist` folder
+3. Set environment variables for API endpoints
+
+## 🎯 Getting Started Tips
+
+1. **Start with Map View**: Click on the map to select a location
+2. **Adjust Search Radius**: Use the filter panel to control search area
+3. **Apply Filters**: Use the advanced filters to narrow down properties
+4. **Switch to Swipe**: Click "Start Swiping" to begin property discovery
+5. **Like Properties**: Swipe right or click the heart icon
+6. **Skip Properties**: Swipe left or click the X icon
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**No properties showing:**
+- Check if search radius is too small
+- Verify filters aren't too restrictive
+- Ensure backend is running on port 3000
+
+**API errors:**
+- Verify Supabase credentials in `.env.local`
+- Check database connection
+- Ensure API endpoints are accessible
+
+**Frontend not loading:**
+- Verify frontend is running on port 8080
+- Check browser console for errors
+- Ensure backend API is accessible
+
+## 📊 Database Schema
 
 ### Core Tables
-
-- `app_user`: User profiles and embeddings
-- `property`: Property listings with embeddings
-- `interaction`: User swipe history
-- `edge`: Property similarity relationships
-- `recommendation_batch`: Generated recommendation sets
+- **property**: Property listings with location, price, details
+- **app_user**: User profiles and preferences
+- **interaction**: User swipe history and preferences
 
 ### Key Features
-
-- Vector embeddings for semantic search
-- Graph relationships for property similarity
-- Real-time updates via Supabase Realtime
+- Vector embeddings for AI recommendations
+- Geographic data for location-based search
+- Real-time updates via Supabase
 - Row Level Security (RLS) for data protection
 
-## API Endpoints
-
-- `GET /api/properties` - Get property listings with filters
-- `POST /api/recommendations` - Get personalized recommendations
-- `POST /api/interactions` - Record user interactions
-
-## Deployment
-
-### Frontend (Vercel)
-
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main
-
-### Worker (Railway)
-
-1. Create a new Railway project
-2. Connect your GitHub repository
-3. Set environment variables
-4. Deploy the worker from the `worker/` directory
-
-## Demo Data
-
-The worker creates sample properties in the Bay Area with:
-- Realistic property data (prices, bedrooms, bathrooms)
-- Generated property embeddings
-- Similarity relationships between properties
-- Investment metrics (cap rates, monthly rent)
-
-## Future Enhancements
-
-- MLS integration for real property data
-- Advanced AI agent with natural language processing
-- Investment analytics and ROI calculations
-- Social features and property sharing
-- Mobile app development
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
-4. Submit a pull request
+4. Test thoroughly
+5. Submit a pull request
 
-## License
+## 📄 License
 
 MIT License - see LICENSE file for details
 
-## Hackathon Demo
+## 🌟 Demo
 
-This project was built for a hackathon and demonstrates:
-- Modern web development with Next.js and TypeScript
-- AI-powered recommendation systems
-- Real-time data synchronization
-- Mobile-first responsive design
-- Vector similarity search and graph relationships
+Visit the live demo to see REALestate.ai in action:
+- Interactive map browsing
+- Advanced property filtering
+- AI-powered recommendations
+- Smooth swipe interface
 
-Perfect for showcasing the "wow factor" of agentic property recommendations!
+Perfect for showcasing modern real estate technology and AI-powered property discovery!
