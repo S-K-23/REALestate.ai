@@ -272,10 +272,6 @@ MIT License - see LICENSE file for details
 
 ## 🌟 Demo
 
-Visit the live demo to see REALestate.ai in action:
-- Interactive map browsing
-- Advanced property filtering
-- AI-powered recommendations
-- Smooth swipe interface
-
-Perfect for showcasing modern real estate technology and AI-powered property discovery!
+<img width="2122" height="1206" alt="Screenshot 2025-09-20 at 11 32 27 PM" src="https://github.com/user-attachments/assets/9cd82696-9fcc-41e5-b431-8e339897760d" />
+<img width="2122" height="1206" alt="Screenshot 2025-09-20 at 11 32 38 PM" src="https://github.com/user-attachments/assets/2a798a7a-6ad0-414d-9f36-6086960e5ec5" />
+<img width="2122" height="1206" alt="Screenshot 2025-09-20 at 11 34 08 PM" src="https://github.com/user-attachments/assets/26d64c53-74d4-4aff-a285-a9be107cc84c" />
