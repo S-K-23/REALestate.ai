@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   const response = new NextResponse(null, { status: 200 })
   response.headers.set('Access-Control-Allow-Origin', '*')
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -11,7 +11,7 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, limit = 50, location } = await request.json()
+    const { userId, location, searchRadius = 100, filters = {}, limit = 50 } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
 
     console.log('🎯 Getting recommendations for user:', userId, 'at location:', location?.name)
     console.log('📍 Location coordinates:', { lat: location?.lat, lng: location?.lng })
+    console.log('🔍 Search radius:', searchRadius, 'km')
+    console.log('🔍 DEBUG - Filters received by backend:', JSON.stringify(filters, null, 2))
 
     // Use server client for recommendations
     const serverClient = createServerClient()
@@ -36,51 +38,205 @@ export async function POST(request: NextRequest) {
 
     const seenPropertyIds = interactions?.map(i => i.property_id) || []
 
-    // PRIORITY 1: If location is provided, prioritize location-based selection
-    if (location?.lat && location?.lng && !isNaN(location.lat) && !isNaN(location.lng)) {
-      console.log('🗺️ Location provided, prioritizing location-based selection')
-      console.log('✅ Location coordinates are valid numbers:', { lat: location.lat, lng: location.lng })
+    // Check if location is valid, if not use fallback
+    if (!location?.lat || !location?.lng || isNaN(location.lat) || isNaN(location.lng)) {
+      console.log('⚠️ No valid location provided, using fallback search...')
       
-      // Get properties with coordinates first
-      let locationQuery = serverClient
+      // FALLBACK: Get random properties that match filters
+      let fallbackQuery = serverClient
         .from('property')
         .select('*')
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
 
-      // Filter out seen properties if any
-      if (seenPropertyIds.length > 0) {
-        locationQuery = locationQuery.not('id', 'in', `(${seenPropertyIds.join(',')})`)
+      // Apply filters to fallback search
+      if (filters.priceRange) {
+        fallbackQuery = fallbackQuery
+          .gte('price', filters.priceRange[0])
+          .lte('price', filters.priceRange[1])
       }
 
-      const { data: locationProperties, error: locationError } = await locationQuery
+      if (filters.bedrooms) {
+        fallbackQuery = fallbackQuery
+          .gte('bedrooms', filters.bedrooms[0])
+          .lte('bedrooms', filters.bedrooms[1])
+      }
 
-      if (locationError) {
-        console.error('Error getting location-based properties:', locationError)
-      } else if (locationProperties && locationProperties.length > 0) {
-        console.log(`📍 Found ${locationProperties.length} properties with coordinates`)
+      if (filters.bathrooms) {
+        fallbackQuery = fallbackQuery
+          .gte('bathrooms', filters.bathrooms[0])
+          .lte('bathrooms', filters.bathrooms[1])
+      }
+
+      if (filters.squareFeet) {
+        fallbackQuery = fallbackQuery
+          .gte('square_feet', filters.squareFeet[0])
+          .lte('square_feet', filters.squareFeet[1])
+      }
+
+      if (filters.yearBuilt) {
+        fallbackQuery = fallbackQuery
+          .gte('year_built', filters.yearBuilt[0])
+          .lte('year_built', filters.yearBuilt[1])
+      }
+
+      if (filters.capRate) {
+        fallbackQuery = fallbackQuery.or(`cap_rate.is.null,cap_rate.gte.${filters.capRate[0]},cap_rate.lte.${filters.capRate[1]}`)
+      }
+
+      if (filters.propertyTypes && filters.propertyTypes.length > 0) {
+        fallbackQuery = fallbackQuery.in('property_type', filters.propertyTypes)
+      }
+
+      if (filters.states && filters.states.length > 0) {
+        fallbackQuery = fallbackQuery.in('state', filters.states)
+      }
+
+      // Filter out seen properties
+      if (seenPropertyIds.length > 0) {
+        fallbackQuery = fallbackQuery.not('id', 'in', `(${seenPropertyIds.join(',')})`)
+      }
+
+      // Random ordering for fallback
+      fallbackQuery = fallbackQuery.order('created_at', { ascending: false })
+
+      const { data: fallbackProperties, error: fallbackError } = await fallbackQuery
+
+      if (fallbackError) {
+        console.error('Error getting fallback properties:', fallbackError)
+        const response = NextResponse.json({ recommendations: [] })
+        response.headers.set('Access-Control-Allow-Origin', '*')
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        return response
+      }
+
+      if (fallbackProperties && fallbackProperties.length > 0) {
+        console.log(`🎲 Found ${fallbackProperties.length} fallback properties (no location)`)
         
-        // Calculate distances and prioritize by proximity
-        const recommendations = locationProperties.map(property => {
-          const distance = calculateDistance(
-            location.lat, 
-            location.lng, 
-            parseFloat(property.latitude), 
-            parseFloat(property.longitude)
-          )
-          
-          // Convert distance to a score (closer = higher score)
-          let distanceScore = 1.0;
-          if (distance <= 10) {
-            distanceScore = 1.0; // Very high priority for properties within 10km
-          } else if (distance <= 50) {
-            distanceScore = 1.0 - ((distance - 10) / 40) * 0.3; // 0.7 to 1.0
-          } else if (distance <= 200) {
-            distanceScore = 0.7 - ((distance - 50) / 150) * 0.5; // 0.2 to 0.7
-          } else {
-            distanceScore = 0.1; // Very low priority for far properties
-          }
-          
+        const fallbackRecommendations = fallbackProperties
+          .slice(0, limit)
+          .map(property => ({
+            ...property,
+            title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+            price: `$${property.price?.toLocaleString() || 'N/A'}`,
+            location: `${property.city}, ${property.state}`,
+            type: property.property_type || 'Unknown',
+            bedrooms: property.bedrooms || 0,
+            bathrooms: property.bathrooms || 0,
+            area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+            image: property.images && property.images.length > 0 ? property.images[0] : null,
+            description: property.description || 'No description available',
+            similarity_score: 0.3,
+            reason: 'fallback_no_location'
+          }))
+
+        console.log(`🎲 Returning ${fallbackRecommendations.length} fallback recommendations (no location)`)
+        const response = NextResponse.json({ recommendations: fallbackRecommendations })
+        response.headers.set('Access-Control-Allow-Origin', '*')
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        return response
+      }
+
+      // No fallback properties found
+      console.log('❌ No properties found with fallback search')
+      const response = NextResponse.json({ recommendations: [] })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
+    }
+
+    console.log('🗺️ Location-based search within', searchRadius, 'km radius')
+
+    // Get properties with coordinates and apply filters
+    let locationQuery = serverClient
+      .from('property')
+      .select('*')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+
+    // Apply ALL filters
+    if (filters.priceRange) {
+      locationQuery = locationQuery
+        .gte('price', filters.priceRange[0])
+        .lte('price', filters.priceRange[1])
+    }
+
+    if (filters.bedrooms) {
+      locationQuery = locationQuery
+        .gte('bedrooms', filters.bedrooms[0])
+        .lte('bedrooms', filters.bedrooms[1])
+    }
+
+    if (filters.bathrooms) {
+      locationQuery = locationQuery
+        .gte('bathrooms', filters.bathrooms[0])
+        .lte('bathrooms', filters.bathrooms[1])
+    }
+
+    if (filters.squareFeet) {
+      locationQuery = locationQuery
+        .gte('square_feet', filters.squareFeet[0])
+        .lte('square_feet', filters.squareFeet[1])
+    }
+
+    if (filters.yearBuilt) {
+      locationQuery = locationQuery
+        .gte('year_built', filters.yearBuilt[0])
+        .lte('year_built', filters.yearBuilt[1])
+    }
+
+    if (filters.capRate) {
+      locationQuery = locationQuery.or(`cap_rate.is.null,cap_rate.gte.${filters.capRate[0]},cap_rate.lte.${filters.capRate[1]}`)
+    }
+
+    if (filters.propertyTypes && filters.propertyTypes.length > 0) {
+      locationQuery = locationQuery.in('property_type', filters.propertyTypes)
+    }
+
+    if (filters.states && filters.states.length > 0) {
+      locationQuery = locationQuery.in('state', filters.states)
+    }
+
+    // Filter out seen properties if any
+    if (seenPropertyIds.length > 0) {
+      locationQuery = locationQuery.not('id', 'in', `(${seenPropertyIds.join(',')})`)
+    }
+
+    const { data: locationProperties, error: locationError } = await locationQuery
+
+    if (locationError) {
+      console.error('Error getting location-based properties:', locationError)
+      const response = NextResponse.json({ recommendations: [] })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
+    }
+
+    if (!locationProperties || locationProperties.length === 0) {
+      console.log('❌ No properties found matching filters')
+      const response = NextResponse.json({ recommendations: [] })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
+    }
+
+    console.log(`📍 Found ${locationProperties.length} properties with coordinates`)
+
+    // Calculate distances and filter by radius
+    const recommendations = locationProperties
+      .map(property => {
+        const distance = calculateDistance(
+          location.lat,
+          location.lng,
+          parseFloat(property.latitude),
+          parseFloat(property.longitude)
+        )
+
+        // Only include properties within the search radius
+        if (distance <= searchRadius) {
           return {
             ...property,
             title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
@@ -92,200 +248,128 @@ export async function POST(request: NextRequest) {
             area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
             image: property.images && property.images.length > 0 ? property.images[0] : null,
             description: property.description || 'No description available',
-            similarity_score: distanceScore,
+            similarity_score: 1.0 - (distance / searchRadius), // Distance-based score
             distance_km: distance,
-            reason: 'location_priority'
-          }
-        })
-        .sort((a, b) => {
-          // Sort by distance first, then by score
-          if (a.distance_km !== b.distance_km) {
-            return a.distance_km - b.distance_km;
-          }
-          return b.similarity_score - a.similarity_score;
-        })
-        .slice(0, limit)
-
-        console.log(`🗺️ Location-based selection returned ${recommendations.length} recommendations`)
-        console.log('📍 Closest property:', recommendations[0] ? {
-          id: recommendations[0].id,
-          address: recommendations[0].address,
-          city: recommendations[0].city,
-          distance: recommendations[0].distance_km
-        } : 'none')
-        
-        const response = NextResponse.json({ recommendations })
-        response.headers.set('Access-Control-Allow-Origin', '*')
-        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        return response
-      }
-    }
-
-    // PRIORITY 2: Check if user has an embedding for vector search
-    const { data: userData, error: userError } = await serverClient
-      .from('app_user')
-      .select('user_embedding')
-      .eq('id', userId)
-      .single()
-
-    console.log('🔍 User data query result:', { userData, userError })
-
-    const userEmbedding = userData?.user_embedding
-
-    if (userEmbedding) {
-      console.log('🎯 Using vector search with user embedding')
-      
-      // Get all properties with embeddings
-      let query = serverClient
-        .from('property')
-        .select('*')
-        .not('property_embedding', 'is', null)
-
-      // Filter out seen properties if any
-      if (seenPropertyIds.length > 0) {
-        query = query.not('id', 'in', `(${seenPropertyIds.join(',')})`)
-      }
-
-      const { data: allProperties, error: propertiesError } = await query
-
-      if (propertiesError) {
-        console.error('Error getting properties for vector search:', propertiesError)
-        // Fallback to graph traversal
-      } else if (allProperties && allProperties.length > 0) {
-        // Calculate vector similarities
-             const recommendations = allProperties.map(property => {
-               const similarity = calculateVectorSimilarity(userEmbedding, property.property_embedding)
-               return {
-                 ...property,
-                 title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
-                 price: `$${property.price?.toLocaleString() || 'N/A'}`,
-                 location: `${property.city}, ${property.state}`,
-                 type: property.property_type || 'Unknown',
-                 bedrooms: property.bedrooms || 0,
-                 bathrooms: property.bathrooms || 0,
-                 area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
-                 image: property.images && property.images.length > 0 ? property.images[0] : null,
-                 description: property.description || 'No description available',
-                 similarity_score: similarity,
-                 reason: 'vector_similarity'
-               }
-             })
-        .sort((a, b) => b.similarity_score - a.similarity_score)
-        .slice(0, limit)
-
-        console.log(`🎯 Vector search returned ${recommendations.length} recommendations`)
-        const response = NextResponse.json({ recommendations })
-        response.headers.set('Access-Control-Allow-Origin', '*')
-        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        return response
-      }
-    }
-
-    // Fallback to graph traversal if no user embedding or vector search failed
-    console.log('🔗 Using graph traversal')
-    
-    try {
-      const { data: edges, error: edgesError } = await serverClient
-        .from('edge')
-        .select('target_property_id, similarity_score')
-        .order('similarity_score', { ascending: false })
-        .limit(limit * 2)
-
-      if (edgesError) {
-        console.error('Error getting graph edges:', edgesError)
-        // Fallback to regular properties
-      } else if (edges && edges.length > 0) {
-        // Get property IDs from edges
-        const propertyIds = edges.map(edge => edge.target_property_id)
-        
-        // Get full property data
-        const { data: properties, error: propertiesError } = await serverClient
-          .from('property')
-          .select('*')
-          .in('id', propertyIds)
-
-        if (propertiesError) {
-          console.error('Error getting properties for recommendations:', propertiesError)
-        } else if (properties) {
-          // Filter out seen properties and get unique properties
-          const uniqueProperties = new Map()
-          
-          for (const edge of edges) {
-            const property = properties.find(p => p.id === edge.target_property_id)
-                 if (property && !seenPropertyIds.includes(property.id) && !uniqueProperties.has(property.id)) {
-                   uniqueProperties.set(property.id, {
-                     ...property,
-                     title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
-                     price: `$${property.price?.toLocaleString() || 'N/A'}`,
-                     location: `${property.city}, ${property.state}`,
-                     type: property.property_type || 'Unknown',
-                     bedrooms: property.bedrooms || 0,
-                     bathrooms: property.bathrooms || 0,
-                     area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
-                     image: property.images && property.images.length > 0 ? property.images[0] : null,
-                     description: property.description || 'No description available',
-                     similarity_score: edge.similarity_score,
-                     reason: 'graph_traversal'
-                   })
-              
-              if (uniqueProperties.size >= limit) break
-            }
-          }
-
-          const recommendations = Array.from(uniqueProperties.values())
-          
-          if (recommendations.length > 0) {
-            console.log(`🔗 Graph traversal returned ${recommendations.length} recommendations`)
-            const response = NextResponse.json({ recommendations })
-            response.headers.set('Access-Control-Allow-Origin', '*')
-            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            return response
+            reason: 'location_based'
           }
         }
-      }
-    } catch (graphError) {
-      console.error('Error in graph traversal:', graphError)
+        return null
+      })
+      .filter(property => property !== null) // Remove properties outside radius
+      .sort((a, b) => a.distance_km - b.distance_km) // Sort by distance
+
+    console.log(`🗺️ Found ${recommendations.length} properties within ${searchRadius}km radius`)
+    console.log('📍 Closest property:', recommendations[0] ? {
+      id: recommendations[0].id,
+      bedrooms: recommendations[0].bedrooms,
+      property_type: recommendations[0].property_type,
+      distance: recommendations[0].distance_km
+    } : 'none')
+
+    // If we have enough location-based recommendations, return them
+    if (recommendations.length >= Math.min(limit, 10)) {
+      const response = NextResponse.json({ recommendations: recommendations.slice(0, limit) })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
     }
 
-    // Final fallback to regular properties
-    console.log('📋 Using fallback properties')
+    // FALLBACK: Get random properties that match filters if not enough location-based results
+    console.log('🎲 Using fallback: random properties with filters...')
+    
     let fallbackQuery = serverClient
       .from('property')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit)
 
-    // Filter out seen properties if any
+    // Apply filters to fallback search
+    if (filters.priceRange) {
+      fallbackQuery = fallbackQuery
+        .gte('price', filters.priceRange[0])
+        .lte('price', filters.priceRange[1])
+    }
+
+    if (filters.bedrooms) {
+      fallbackQuery = fallbackQuery
+        .gte('bedrooms', filters.bedrooms[0])
+        .lte('bedrooms', filters.bedrooms[1])
+    }
+
+    if (filters.bathrooms) {
+      fallbackQuery = fallbackQuery
+        .gte('bathrooms', filters.bathrooms[0])
+        .lte('bathrooms', filters.bathrooms[1])
+    }
+
+    if (filters.squareFeet) {
+      fallbackQuery = fallbackQuery
+        .gte('square_feet', filters.squareFeet[0])
+        .lte('square_feet', filters.squareFeet[1])
+    }
+
+    if (filters.yearBuilt) {
+      fallbackQuery = fallbackQuery
+        .gte('year_built', filters.yearBuilt[0])
+        .lte('year_built', filters.yearBuilt[1])
+    }
+
+    if (filters.capRate) {
+      fallbackQuery = fallbackQuery.or(`cap_rate.is.null,cap_rate.gte.${filters.capRate[0]},cap_rate.lte.${filters.capRate[1]}`)
+    }
+
+    if (filters.propertyTypes && filters.propertyTypes.length > 0) {
+      fallbackQuery = fallbackQuery.in('property_type', filters.propertyTypes)
+    }
+
+    if (filters.states && filters.states.length > 0) {
+      fallbackQuery = fallbackQuery.in('state', filters.states)
+    }
+
+    // Filter out seen properties
     if (seenPropertyIds.length > 0) {
       fallbackQuery = fallbackQuery.not('id', 'in', `(${seenPropertyIds.join(',')})`)
     }
 
-    const { data: properties, error: propertiesError } = await fallbackQuery
+    // Random ordering for fallback
+    fallbackQuery = fallbackQuery.order('created_at', { ascending: false })
 
-    if (propertiesError) {
-      throw propertiesError
+    const { data: fallbackProperties, error: fallbackError } = await fallbackQuery
+
+    if (fallbackError) {
+      console.error('Error getting fallback properties:', fallbackError)
     }
 
-         let recommendations = properties?.map(property => ({
-           ...property,
-           title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
-           price: `$${property.price?.toLocaleString() || 'N/A'}`,
-           location: `${property.city}, ${property.state}`,
-           type: property.property_type || 'Unknown',
-           bedrooms: property.bedrooms || 0,
-           bathrooms: property.bathrooms || 0,
-           area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
-           image: property.images && property.images.length > 0 ? property.images[0] : null,
-           description: property.description || 'No description available',
-           similarity_score: 0.5,
-           reason: 'fallback'
-         })) || []
+    if (fallbackProperties && fallbackProperties.length > 0) {
+      console.log(`🎲 Found ${fallbackProperties.length} fallback properties`)
+      
+      const fallbackRecommendations = fallbackProperties
+        .slice(0, limit)
+        .map(property => ({
+          ...property,
+          title: `${property.bedrooms || 'N/A'} bed ${property.property_type || 'home'}`,
+          price: `$${property.price?.toLocaleString() || 'N/A'}`,
+          location: `${property.city}, ${property.state}`,
+          type: property.property_type || 'Unknown',
+          bedrooms: property.bedrooms || 0,
+          bathrooms: property.bathrooms || 0,
+          area: property.square_feet ? `${property.square_feet.toLocaleString()} sq ft` : 'N/A',
+          image: property.images && property.images.length > 0 ? property.images[0] : null,
+          description: property.description || 'No description available',
+          similarity_score: 0.3,
+          reason: 'fallback'
+        }))
 
-    console.log(`🎯 Got ${recommendations.length} recommendations`)
-    const response = NextResponse.json({ recommendations })
+      console.log(`🎲 Returning ${fallbackRecommendations.length} fallback recommendations`)
+      const response = NextResponse.json({ recommendations: fallbackRecommendations })
+      response.headers.set('Access-Control-Allow-Origin', '*')
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      return response
+    }
+
+    // No properties found with any method
+    console.log('❌ No properties found matching the criteria')
+    const response = NextResponse.json({ recommendations: [] })
     response.headers.set('Access-Control-Allow-Origin', '*')
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -301,7 +385,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to calculate distance between two coordinates
+// Helper function to calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Radius of the Earth in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -313,49 +397,4 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   const distance = R * c; // Distance in kilometers
   return distance;
-}
-
-// Helper function to calculate vector similarity
-function calculateVectorSimilarity(userEmbedding: any, propertyEmbedding: any): number {
-  try {
-    // Parse embeddings if they're strings
-    const userVec = typeof userEmbedding === 'string' ? JSON.parse(userEmbedding) : userEmbedding
-    const propertyVec = typeof propertyEmbedding === 'string' ? JSON.parse(propertyEmbedding) : propertyEmbedding
-
-    if (!Array.isArray(userVec) || !Array.isArray(propertyVec)) {
-      return 0.5 // Default similarity if embeddings are invalid
-    }
-
-    // Calculate cosine similarity
-    let dotProduct = 0
-    let userMagnitude = 0
-    let propertyMagnitude = 0
-
-    const minLength = Math.min(userVec.length, propertyVec.length)
-
-    for (let i = 0; i < minLength; i++) {
-      const userVal = userVec[i] || 0
-      const propertyVal = propertyVec[i] || 0
-      
-      dotProduct += userVal * propertyVal
-      userMagnitude += userVal * userVal
-      propertyMagnitude += propertyVal * propertyVal
-    }
-
-    userMagnitude = Math.sqrt(userMagnitude)
-    propertyMagnitude = Math.sqrt(propertyMagnitude)
-
-    if (userMagnitude === 0 || propertyMagnitude === 0) {
-      return 0.5 // Default similarity if magnitude is zero
-    }
-
-    const similarity = dotProduct / (userMagnitude * propertyMagnitude)
-    
-    // Normalize similarity to 0-1 range (cosine similarity is -1 to 1)
-    return (similarity + 1) / 2
-
-  } catch (error) {
-    console.error('Error calculating vector similarity:', error)
-    return 0.5 // Default similarity on error
-  }
 }
