@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pure Black & White Design System */
+
+@layer base {
+  :root {
+    /* Pure black and white only */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    /* Primary - Pure black */
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Pure white with black text */
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 0 0% 0%;
+
+    /* Muted - Pure white */
+    --muted: 0 0% 100%;
+    --muted-foreground: 0 0% 0%;
+
+    /* Accent - Pure white with black text */
+    --accent: 0 0% 100%;
+    --accent-foreground: 0 0% 0%;
+
+    /* Destructive - Pure black */
+    --destructive: 0 0% 0%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs - Pure black */
+    --border: 0 0% 0%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 0%;
+
+    /* Map colors - Black and white */
+    --map-land: 0 0% 100%;
+    --map-water: 0 0% 100%;
+    --map-border: 0 0% 0%;
+    
+    /* Light blue pins */
+    --pin-color: 200 100% 70%;
+
+    /* Pure gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 0%), hsl(0 0% 0%));
+    --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 100%));
+    --gradient-accent: linear-gradient(90deg, hsl(0 0% 100%), hsl(0 0% 100%));
+
+    /* Sharp shadows */
+    --shadow-sleek: 0 4px 20px -2px hsl(0 0% 0% / 0.2);
+    --shadow-sharp: 0 2px 10px -1px hsl(0 0% 0% / 0.3);
+    --shadow-soft: 0 1px 6px hsl(0 0% 0% / 0.1);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 0%;
+    --sidebar-ring: 200 100% 70%;
+  }
+
+  .dark {
+    /* Pure black and white dark mode */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 0%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 0%;
+    --muted-foreground: 0 0% 100%;
+    --accent: 0 0% 0%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 0% 100%;
+    --destructive-foreground: 0 0% 0%;
+    --border: 0 0% 100%;
+    --input: 0 0% 0%;
+    --ring: 0 0% 100%;
+    --map-land: 0 0% 0%;
+    --map-water: 0 0% 0%;
+    --map-border: 0 0% 100%;
+    --pin-color: 200 100% 70%;
+  }
+}
+
+/* Smooth animations and transitions */
+@layer base {
+  * {
+    @apply border-border transition-colors duration-200;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Enhanced utility classes for sleek interactions */
+@layer utilities {
+  .animate-smooth-scale {
+    @apply transition-all duration-300 ease-out hover:scale-105 hover:shadow-sleek;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .swipe-card {
+    @apply transition-all duration-300 ease-out shadow-soft hover:shadow-sharp;
+  }
+
+  .card-sleek {
+    @apply bg-card border border-border shadow-soft hover:shadow-sleek transition-all duration-300;
+  }
+
+  .btn-sleek {
+    @apply bg-primary text-primary-foreground shadow-sharp hover:shadow-sleek transition-all duration-200;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Leaflet map styling for black water and white continents */
+.leaflet-map-container .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) contrast(1.2) brightness(0.9);
+  transition: transform 1.0s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.leaflet-map-container {
+  background: hsl(0 0% 0%) !important; /* Black background for water areas */
+}
+
+.leaflet-map-container .leaflet-zoom-anim .leaflet-zoom-animated {
+  transition: transform 1.0s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+}
+
+/* Enable smooth user interactions */
+.leaflet-map-container .leaflet-interactive {
+  cursor: pointer !important;
+}
+
+.leaflet-map-container .leaflet-grab {
+  cursor: grab !important;
+}
+
+.leaflet-map-container .leaflet-grabbing {
+  cursor: grabbing !important;
+}
+
+.leaflet-control-container .leaflet-control {
+  background: hsl(var(--background)) !important;
+  border: 2px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.leaflet-control-container .leaflet-control a {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-bottom: 2px solid hsl(var(--border)) !important;
+}
+
+.leaflet-control-container .leaflet-control a:hover {
+  background: hsl(var(--accent)) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 2px solid hsl(var(--border)) !important;
+}
+
+.leaflet-popup-tip {
+  background: hsl(var(--background)) !important;
+  border: 2px solid hsl(var(--border)) !important;
+}
